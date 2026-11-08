@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abstraite — geometric art generator</title>
+  <meta name="description" content="Generate Bauhaus-style abstract geometric art in your browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="2" y="2" width="20" height="44" fill="#1F4B6B"/>
+        <circle cx="35" cy="13" r="11" fill="#E2402F"/>
+        <path d="M24 46a12 12 0 0 1 22 0z" fill="#F0B23C"/>
+      </svg>
+      <div>
+        <h1>Abstraite</h1>
+        <p class="tag">Geometric art, made in your browser</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="Artwork">
+      <div class="canvas-wrap">
+        <canvas id="art" aria-label="Generated artwork"></canvas>
+      </div>
+      <div class="actions">
+        <button id="generate" class="btn primary" title="Shortcut: Space">Generate <kbd>Space</kbd></button>
+        <button id="save" class="btn" title="Shortcut: S">Save PNG <kbd>S</kbd></button>
+        <label class="size">
+          <span>Size</span>
+          <select id="exportScale">
+            <option value="1">1×</option>
+            <option value="2" selected>2×</option>
+            <option value="4">4×</option>
+          </select>
+        </label>
+      </div>
+      <p class="meta" id="meta"></p>
+      <div class="history-wrap">
+        <h2>Recent</h2>
+        <div id="history" class="history" aria-label="Recent artworks"></div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="Settings">
+      <fieldset>
+        <legend>Geometry</legend>
+        <div class="chips" data-key="composition"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Colour</legend>
+        <div class="chips palettes" data-key="palette"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Vibe</legend>
+        <div class="chips" data-key="vibe"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Detail <output id="detailOut">3</output></legend>
+        <input type="range" id="detail" min="1" max="5" step="1" value="3">
+      </fieldset>
+      <fieldset>
+        <legend>Format</legend>
+        <div class="chips" data-key="format"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Frame</legend>
+        <div class="chips" data-key="frame"></div>
+      </fieldset>
+      <fieldset class="toggles">
+        <legend>Extras</legend>
+        <label><input type="checkbox" id="gridLines" checked> Grid lines</label>
+        <label><input type="checkbox" id="grain" checked> Paper grain</label>
+      </fieldset>
+      <fieldset>
+        <legend>Seed</legend>
+        <div class="seed">
+          <input id="seed" type="text" maxlength="24" spellcheck="false" aria-label="Seed">
+          <button id="copyLink" class="btn small" title="Copy a link to this exact artwork">Copy link</button>
+        </div>
+        <p class="hint">Same seed + same settings = same artwork.</p>
+      </fieldset>
+    </aside>
+  </main>
+
+  <script src="generator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
