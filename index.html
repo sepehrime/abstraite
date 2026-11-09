@@ -50,36 +50,31 @@
     </section>
 
     <aside class="panel" aria-label="Settings">
-      <div class="row">
-        <label for="composition">Geometry</label>
-        <select id="composition" data-key="composition"></select>
-      </div>
-      <div class="row">
-        <label for="palette">Colour</label>
-        <div class="with-swatch">
-          <select id="palette" data-key="palette"></select>
-          <span class="swatches" id="paletteSwatch" aria-hidden="true"></span>
-        </div>
-      </div>
+      <details class="group" data-key="composition">
+        <summary><span class="g-label">Geometry</span><span class="g-value"></span></summary>
+        <div class="chips"></div>
+      </details>
+      <details class="group" data-key="palette">
+        <summary><span class="g-label">Colour</span><span class="g-value"></span></summary>
+        <div class="chips palettes"></div>
+      </details>
+      <details class="group" data-key="vibe">
+        <summary><span class="g-label">Vibe</span><span class="g-value"></span></summary>
+        <div class="chips"></div>
+      </details>
       <div class="pair">
-        <div class="row">
-          <label for="vibe">Vibe</label>
-          <select id="vibe" data-key="vibe"></select>
-        </div>
         <div class="row">
           <label for="format">Format</label>
           <select id="format" data-key="format"></select>
         </div>
-      </div>
-      <div class="pair">
         <div class="row">
           <label for="frame">Frame</label>
           <select id="frame" data-key="frame"></select>
         </div>
-        <div class="row">
-          <label for="detail">Detail <output id="detailOut">3</output></label>
-          <input type="range" id="detail" min="1" max="5" step="1" value="3">
-        </div>
+      </div>
+      <div class="row">
+        <label for="detail">Detail <output id="detailOut">3</output></label>
+        <input type="range" id="detail" min="1" max="5" step="1" value="3">
       </div>
       <div class="toggles">
         <label><input type="checkbox" id="gridLines" checked> Grid lines</label>
@@ -97,8 +92,8 @@
   </main>
 
   <footer class="foot">
-    <span>© Abstraite 2026</span>
-    <a href="https://www.instagram.com/obstraite/" target="_blank" rel="noopener">
+    <span>© Abstraite, 2026</span>
+    <a href="https://www.instagram.com/randomly_abstracted/" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>
       @obstraite on Instagram
     </a>

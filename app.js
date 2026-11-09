@@ -3,8 +3,24 @@
   'use strict';
   const { PALETTES, VIBES, COMPOSITIONS, FORMATS, render, randomSeed } = window.Abstraite;
 
+  // Tiny icons for the geometry chips.
+  const sv = (body) => '<svg viewBox="0 0 16 16" aria-hidden="true">' + body + '</svg>';
+  const ICONS = {
+    grid: sv('<rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 1v14M1 7h14" stroke="currentColor" stroke-width="1.5"/><rect x="7" y="8" width="7" height="6" fill="currentColor"/>'),
+    orbs: sv('<circle cx="4.5" cy="4.5" r="3.2" fill="currentColor"/><circle cx="11.5" cy="11.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 8v8M8 11.5h8" stroke="currentColor" stroke-width="1.2"/>'),
+    bars: sv('<rect x="2" y="1" width="3" height="14" fill="currentColor"/><rect x="7" y="4" width="3" height="11" fill="currentColor" opacity=".6"/><rect x="12" y="1" width="2.5" height="10" rx="1.25" fill="currentColor"/>'),
+    totem: sv('<circle cx="8" cy="3.5" r="2.5" fill="currentColor"/><rect x="3" y="6.5" width="10" height="2" fill="currentColor"/><rect x="6.5" y="8.5" width="3" height="5" fill="currentColor" opacity=".6"/><path d="M4 15h8" stroke="currentColor" stroke-width="1.5"/>'),
+    arches: sv('<path d="M1 15V9a3 3 0 0 1 6 0v6z" fill="currentColor"/><path d="M9 15V5a3 3 0 0 1 6 0v10z" fill="currentColor" opacity=".6"/>'),
+    tiles: sv('<path d="M1 1h7v7A7 7 0 0 1 1 1z" fill="currentColor"/><path d="M8 8h7L8 15z" fill="currentColor" opacity=".6"/><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"/>'),
+    towers: sv('<rect x="1.5" y="6" width="4" height="9" fill="currentColor"/><rect x="6.5" y="2" width="4" height="13" fill="currentColor" opacity=".6"/><path d="M11.5 15V8l2-2.5 2 2.5v7z" fill="currentColor"/>'),
+    rings: sv('<path d="M1 12a7 7 0 0 1 14 0h-3a4 4 0 0 0-8 0z" fill="currentColor"/><path d="M0 14.5h16" stroke="currentColor" stroke-width="1.2"/>'),
+    diagonals: sv('<path d="M1 15V3l12 12z" fill="currentColor"/><path d="M6 1l9 9" stroke="currentColor" stroke-width="1.5"/>'),
+    horizon: sv('<path d="M3 9a5 5 0 0 1 10 0z" fill="currentColor"/><path d="M0 9.5h16M8 9.5L2 16M8 9.5l6 6.5M8 9.5V16" stroke="currentColor" stroke-width="1.2"/>'),
+    random: sv('<rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/>'),
+  };
+
   const OPTIONS = {
-    composition: Object.entries(COMPOSITIONS).map(([id, c]) => ({ id, label: c.name })),
+    composition: Object.entries(COMPOSITIONS).map(([id, c]) => ({ id, label: c.name, icon: ICONS[id] })),
     palette: Object.entries(PALETTES).map(([id, p]) => ({ id, label: p.name, swatches: [p.primary, p.bright, p.deep, p.soft, p.ink] })),
     vibe: Object.entries(VIBES).map(([id, v]) => ({ id, label: v.name })),
     format: Object.entries(FORMATS).map(([id, f]) => ({ id, label: f.name })),
@@ -34,6 +50,32 @@
     });
   });
 
+  // ---------- Build collapsible chip groups (Geometry, Colour, Vibe) ----------
+  function swatchEl(colors) {
+    const s = document.createElement('span'); s.className = 'swatches';
+    colors.forEach((c) => { const i = document.createElement('i'); i.style.background = c; s.appendChild(i); });
+    return s;
+  }
+  document.querySelectorAll('details.group').forEach((group) => {
+    const key = group.dataset.key;
+    const box = group.querySelector('.chips');
+    OPTIONS[key].forEach((opt) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.dataset.id = opt.id;
+      if (opt.icon) b.insertAdjacentHTML('beforeend', opt.icon);
+      if (opt.swatches) b.appendChild(swatchEl(opt.swatches));
+      b.appendChild(document.createTextNode(opt.label));
+      b.addEventListener('click', () => {
+        state[key] = opt.id;
+        // A new geometry starts a fresh layout; colour/vibe keep the seed
+        // so you can see the same piece in a new mood.
+        if (key === 'composition') state.seed = randomSeed();
+        draw(true);
+      });
+      box.appendChild(b);
+    });
+  });
+
   // ---------- Other controls ----------
   $('detail').addEventListener('input', (e) => { state.detail = +e.target.value; draw(true); });
   $('gridLines').addEventListener('change', (e) => { state.gridLines = e.target.checked; draw(true); });
@@ -48,7 +90,7 @@
   $('copyLink').addEventListener('click', copyLink);
 
   document.addEventListener('keydown', (e) => {
-    if (e.target.matches('input, select, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.matches('input, select, textarea, button, summary') || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.code === 'Space') { e.preventDefault(); regenerate(); }
     else if (e.key === 's' || e.key === 'S') { e.preventDefault(); save(); }
   });
@@ -58,9 +100,15 @@
   // ---------- Render ----------
   function syncControls() {
     document.querySelectorAll('select[data-key]').forEach((sel) => { sel.value = state[sel.dataset.key]; });
-    const sw = $('paletteSwatch'); sw.innerHTML = '';
-    OPTIONS.palette.find((o) => o.id === state.palette).swatches.forEach((c) => {
-      const i = document.createElement('i'); i.style.background = c; sw.appendChild(i);
+    document.querySelectorAll('details.group').forEach((group) => {
+      const key = group.dataset.key;
+      group.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === state[key])));
+      // Show the current choice in the header, so it is visible while collapsed.
+      const opt = OPTIONS[key].find((o) => o.id === state[key]);
+      const val = group.querySelector('.g-value');
+      val.innerHTML = '';
+      if (opt.swatches) val.appendChild(swatchEl(opt.swatches));
+      val.appendChild(document.createTextNode(opt.label));
     });
     $('detail').value = state.detail; $('detailOut').textContent = state.detail;
     $('gridLines').checked = state.gridLines; $('grain').checked = state.grain;
