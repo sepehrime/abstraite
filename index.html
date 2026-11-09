@@ -50,45 +50,59 @@
     </section>
 
     <aside class="panel" aria-label="Settings">
-      <fieldset>
-        <legend>Geometry</legend>
-        <div class="chips" data-key="composition"></div>
-      </fieldset>
-      <fieldset>
-        <legend>Colour</legend>
-        <div class="chips palettes" data-key="palette"></div>
-      </fieldset>
-      <fieldset>
-        <legend>Vibe</legend>
-        <div class="chips" data-key="vibe"></div>
-      </fieldset>
-      <fieldset>
-        <legend>Detail <output id="detailOut">3</output></legend>
-        <input type="range" id="detail" min="1" max="5" step="1" value="3">
-      </fieldset>
-      <fieldset>
-        <legend>Format</legend>
-        <div class="chips" data-key="format"></div>
-      </fieldset>
-      <fieldset>
-        <legend>Frame</legend>
-        <div class="chips" data-key="frame"></div>
-      </fieldset>
-      <fieldset class="toggles">
-        <legend>Extras</legend>
+      <div class="row">
+        <label for="composition">Geometry</label>
+        <select id="composition" data-key="composition"></select>
+      </div>
+      <div class="row">
+        <label for="palette">Colour</label>
+        <div class="with-swatch">
+          <select id="palette" data-key="palette"></select>
+          <span class="swatches" id="paletteSwatch" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="row">
+          <label for="vibe">Vibe</label>
+          <select id="vibe" data-key="vibe"></select>
+        </div>
+        <div class="row">
+          <label for="format">Format</label>
+          <select id="format" data-key="format"></select>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="row">
+          <label for="frame">Frame</label>
+          <select id="frame" data-key="frame"></select>
+        </div>
+        <div class="row">
+          <label for="detail">Detail <output id="detailOut">3</output></label>
+          <input type="range" id="detail" min="1" max="5" step="1" value="3">
+        </div>
+      </div>
+      <div class="toggles">
         <label><input type="checkbox" id="gridLines" checked> Grid lines</label>
         <label><input type="checkbox" id="grain" checked> Paper grain</label>
-      </fieldset>
-      <fieldset>
-        <legend>Seed</legend>
+      </div>
+      <div class="row">
+        <label for="seed">Seed</label>
         <div class="seed">
-          <input id="seed" type="text" maxlength="24" spellcheck="false" aria-label="Seed">
-          <button id="copyLink" class="btn small" title="Copy a link to this exact artwork">Copy link</button>
+          <input id="seed" type="text" maxlength="24" spellcheck="false">
+          <button id="copyLink" class="btn small" type="button" title="Copy a link to this exact artwork">Copy link</button>
         </div>
         <p class="hint">Same seed + same settings = same artwork.</p>
-      </fieldset>
+      </div>
     </aside>
   </main>
+
+  <footer class="foot">
+    <span>© Abstraite 2026</span>
+    <a href="https://www.instagram.com/obstraite/" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>
+      @obstraite on Instagram
+    </a>
+  </footer>
 
   <script src="generator.js"></script>
   <script src="app.js"></script>

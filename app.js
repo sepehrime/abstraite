@@ -3,21 +3,12 @@
   'use strict';
   const { PALETTES, VIBES, COMPOSITIONS, FORMATS, render, randomSeed } = window.Abstraite;
 
-  const ICONS = {
-    grid: '<svg viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 1v14M1 7h14" stroke="currentColor" stroke-width="1.5"/><rect x="7" y="8" width="7" height="6" fill="currentColor"/></svg>',
-    orbs: '<svg viewBox="0 0 16 16"><circle cx="4.5" cy="4.5" r="3.2" fill="currentColor"/><circle cx="11.5" cy="11.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 8v8M8 11.5H16" stroke="currentColor" stroke-width="1.2"/></svg>',
-    bars: '<svg viewBox="0 0 16 16"><rect x="2" y="1" width="3" height="14" fill="currentColor"/><rect x="7" y="4" width="3" height="11" fill="currentColor" opacity=".6"/><rect x="12" y="1" width="2.5" height="10" rx="1.25" fill="currentColor"/></svg>',
-    totem: '<svg viewBox="0 0 16 16"><circle cx="8" cy="3.5" r="2.5" fill="currentColor"/><rect x="3" y="6.5" width="10" height="2" fill="currentColor"/><rect x="6.5" y="8.5" width="3" height="5" fill="currentColor" opacity=".6"/><path d="M4 15h8" stroke="currentColor" stroke-width="1.5"/></svg>',
-    arches: '<svg viewBox="0 0 16 16"><path d="M1 15V9a3 3 0 0 1 6 0v6z" fill="currentColor"/><path d="M9 15V5a3 3 0 0 1 6 0v10z" fill="currentColor" opacity=".6"/></svg>',
-    random: '<svg viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/></svg>',
-  };
-
   const OPTIONS = {
-    composition: Object.entries(COMPOSITIONS).map(([id, c]) => ({ id, label: c.name, icon: ICONS[id] })),
+    composition: Object.entries(COMPOSITIONS).map(([id, c]) => ({ id, label: c.name })),
     palette: Object.entries(PALETTES).map(([id, p]) => ({ id, label: p.name, swatches: [p.primary, p.bright, p.deep, p.soft, p.ink] })),
     vibe: Object.entries(VIBES).map(([id, v]) => ({ id, label: v.name })),
     format: Object.entries(FORMATS).map(([id, f]) => ({ id, label: f.name })),
-    frame: [{ id: 'auto', label: 'Auto' }, { id: 'on', label: 'Always' }, { id: 'off', label: 'Never' }],
+    frame: [{ id: 'auto', label: 'Auto' }, { id: 'on', label: 'Always' }, { id: 'off', label: 'None' }],
   };
 
   const DEFAULTS = { composition: 'random', palette: 'bauhaus', vibe: 'balanced', detail: 3,
@@ -30,29 +21,16 @@
   const $ = (id) => document.getElementById(id);
   const canvas = $('art');
 
-  // ---------- Build chip groups ----------
-  document.querySelectorAll('.chips').forEach((group) => {
-    const key = group.dataset.key;
-    OPTIONS[key].forEach((opt) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'chip';
-      b.dataset.id = opt.id;
-      if (opt.icon) b.insertAdjacentHTML('beforeend', opt.icon);
-      if (opt.swatches) {
-        const s = document.createElement('span'); s.className = 'swatches';
-        opt.swatches.forEach((c) => { const i = document.createElement('i'); i.style.background = c; s.appendChild(i); });
-        b.appendChild(s);
-      }
-      b.appendChild(document.createTextNode(opt.label));
-      b.addEventListener('click', () => {
-        state[key] = opt.id;
-        // Changing geometry or format starts a fresh layout; colour/vibe keep the seed
-        // so you can see the same piece in a new mood.
-        if (key === 'composition') state.seed = randomSeed();
-        draw(true);
-      });
-      group.appendChild(b);
+  // ---------- Build dropdowns ----------
+  document.querySelectorAll('select[data-key]').forEach((sel) => {
+    const key = sel.dataset.key;
+    OPTIONS[key].forEach((opt) => sel.add(new Option(opt.label, opt.id)));
+    sel.addEventListener('change', () => {
+      state[key] = sel.value;
+      // A new geometry starts a fresh layout; colour/vibe keep the seed
+      // so you can see the same piece in a new mood.
+      if (key === 'composition') state.seed = randomSeed();
+      draw(true);
     });
   });
 
@@ -79,9 +57,10 @@
 
   // ---------- Render ----------
   function syncControls() {
-    document.querySelectorAll('.chips').forEach((group) => {
-      const key = group.dataset.key;
-      group.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === state[key])));
+    document.querySelectorAll('select[data-key]').forEach((sel) => { sel.value = state[sel.dataset.key]; });
+    const sw = $('paletteSwatch'); sw.innerHTML = '';
+    OPTIONS.palette.find((o) => o.id === state.palette).swatches.forEach((c) => {
+      const i = document.createElement('i'); i.style.background = c; sw.appendChild(i);
     });
     $('detail').value = state.detail; $('detailOut').textContent = state.detail;
     $('gridLines').checked = state.gridLines; $('grain').checked = state.grain;

@@ -47,6 +47,11 @@
     bars:   { name: 'Bars & stripes' },
     totem:  { name: 'Totem' },
     arches: { name: 'Arches & moons' },
+    tiles:  { name: 'Tile mosaic' },
+    towers: { name: 'Stacked city' },
+    rings:  { name: 'Rainbows & pearls' },
+    diagonals: { name: 'Triangles & diagonals' },
+    horizon: { name: 'Sun & horizon' },
     random: { name: 'Surprise me' },
   };
 
@@ -207,7 +212,7 @@
     }
 
     return { rand, rint, pick, chance, color, accent, rect, box, line, gline, circle, ring, pie, half,
-      splitCircle, capsule, bandedCapsule, arch, stripes, hatch, checker, wave, crosshair, cuts, LW, P, V, ctx };
+      splitCircle, capsule, bandedCapsule, arch, stripes, hatch, checker, wave, crosshair, cuts, LW, P, V, ctx, showLines: opts.gridLines };
   }
 
   // ---------- Compositions ----------
@@ -649,7 +654,230 @@
     if (k.chance(0.6)) k.rect(cx + W / 2 + A.w * 0.03, mid + H * 0.1, k.LW * 1.5, H * 0.25, P.bright);
   }
 
-  const COMP_FNS = { grid: compGrid, orbs: compOrbs, bars: compBars, totem: compTotem, arches: compArches };
+
+  // Square tiles, each with a simple motif (quarter circles, halves, triangles…).
+  function compTiles(k, A) {
+    const { P } = k;
+    const n = Math.max(3, Math.min(8, Math.round(k.rint(4, 5) * Math.sqrt(A.density))));
+    const s = Math.min(A.w, A.h) / n;
+    const cols = Math.floor(A.w / s + 0.001), rows = Math.floor(A.h / s + 0.001);
+    const ox = A.x0 + (A.w - cols * s) / 2, oy = A.y0 + (A.h - rows * s) / 2;
+    const corners = [[0, 0], [1, 0], [1, 1], [0, 1]];
+    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+      const x = ox + i * s, y = oy + j * s;
+      const bg = k.chance(0.55) ? k.color() : P.bg;
+      k.rect(x, y, s + 0.5, s + 0.5, bg);
+      const fg = k.color([bg === P.bg ? 'sand' : '']);
+      const t = k.rand();
+      if (t < 0.28) { // quarter circle from a corner
+        const [cx, cy] = k.pick(corners);
+        const a0 = Math.atan2(0.5 - cy, 0.5 - cx) - Math.PI / 4;
+        k.pie(x + cx * s, y + cy * s, s, a0, a0 + Math.PI / 2, fg);
+      } else if (t < 0.46) { // half circle on a side
+        const d = k.pick(['up', 'down', 'left', 'right']);
+        const pos = { up: [0.5, 1], down: [0.5, 0], left: [1, 0.5], right: [0, 0.5] }[d];
+        k.half(x + pos[0] * s, y + pos[1] * s, s / 2, d, fg);
+      } else if (t < 0.6) { // triangle
+        const [cx, cy] = k.pick(corners);
+        const ctx = k.ctx; ctx.fillStyle = fg; ctx.beginPath();
+        ctx.moveTo(x + cx * s, y + cy * s); ctx.lineTo(x + (1 - cx) * s, y + cy * s); ctx.lineTo(x + cx * s, y + (1 - cy) * s);
+        ctx.closePath(); ctx.fill();
+      } else if (t < 0.72) { k.circle(x + s / 2, y + s / 2, s * k.pick([0.2, 0.35, 0.42]), fg); }
+      else if (t < 0.8) { k.stripes(x, y, s, s, k.pick([3, 4, 6]), [fg, bg === P.bg ? P.paper : P.bg], k.chance(0.5)); }
+      else if (t < 0.86) { k.ring(x + s / 2, y + s / 2, s * 0.3, k.LW); }
+      // else: plain tile
+    }
+    if (k.chance(0.7)) {
+      for (let i = 1; i < cols; i++) k.gline(ox + i * s, oy, ox + i * s, oy + rows * s, k.LW * 0.5);
+      for (let j = 1; j < rows; j++) k.gline(ox, oy + j * s, ox + cols * s, oy + j * s, k.LW * 0.5);
+    }
+    if (!A.frame) k.box(ox, oy, cols * s, rows * s, k.LW);
+  }
+
+  // A small skyline of stacked blocks.
+  function compTowers(k, A) {
+    const { P } = k;
+    const base = A.y1 - A.h * 0.06;
+    const n = Math.max(3, Math.round(k.rint(4, 6) * Math.min(1.3, A.density)));
+    const unit = (A.w * 0.86) / n;
+    // Sky: sun/moon + thin lines.
+    const sunR = A.w * k.rand(0.06, 0.1);
+    const sx = A.x0 + A.w * k.rand(0.15, 0.85), sy = A.y0 + A.h * k.rand(0.1, 0.2);
+    if (k.chance(0.5)) k.circle(sx, sy, sunR, k.accent()); else k.splitCircle(sx, sy, sunR, P.ink, P.paper, true);
+    for (let i = 0; i < k.rint(2, 4); i++) {
+      const y = A.y0 + A.h * (0.06 + i * 0.05);
+      k.gline(A.x0 + A.w * k.rand(0, 0.3), y, A.x1 - A.w * k.rand(0, 0.3), y, k.LW * 0.6);
+    }
+    let x = A.x0 + A.w * 0.07;
+    for (let i = 0; i < n; i++) {
+      const w = unit * k.rand(0.75, 1.05);
+      const h = A.h * k.rand(0.3, 0.72);
+      let y = base;
+      const blocks = k.rint(2, 4);
+      for (let b = 0; b < blocks; b++) {
+        const bh = (h / blocks) * k.rand(0.7, 1.3);
+        const inset = b === 0 ? 0 : w * k.rand(0, 0.2);
+        const col = k.color(['sand']);
+        k.rect(x + inset, y - bh, w - inset * 2, bh + 0.5, col);
+        if (k.chance(0.25)) k.hatch(x + inset, y - bh, w - inset * 2, bh, k.rint(3, 6), false, k.LW * 0.5);
+        else if (k.chance(0.2) && bh > w * 0.6) { // windows
+          const cs = (w - inset * 2) / 4;
+          for (let c = 0; c < 2; c++) for (let r = 0; r < Math.floor(bh / (cs * 2)); r++)
+            k.rect(x + inset + cs * (0.5 + c * 2), y - bh + cs * (0.5 + r * 2), cs, cs, col === P.paper ? P.ink : P.paper);
+        }
+        y -= bh;
+      }
+      const top = k.rand();
+      if (top < 0.3) k.half(x + w / 2, y, w * 0.4, 'up', k.accent());
+      else if (top < 0.5) { const ctx = k.ctx; ctx.fillStyle = P.ink; ctx.beginPath(); ctx.moveTo(x + w * 0.15, y); ctx.lineTo(x + w / 2, y - w * 0.5); ctx.lineTo(x + w * 0.85, y); ctx.fill(); }
+      else if (top < 0.62) k.line(x + w / 2, y, x + w / 2, y - w * 0.6, k.LW * 0.8);
+      x += w + unit * k.rand(-0.15, 0.12);
+    }
+    k.rect(A.x0, base, A.w, A.y1 - base, P.ink);
+  }
+
+  // Concentric rainbow arcs, a target and pearls on a wire.
+  function compRings(k, A) {
+    const { P } = k;
+    const groups = A.density > 1.05 && k.chance(0.6) ? 2 : 1;
+    const base = A.y0 + A.h * k.rand(0.58, 0.68);
+    const xs = groups === 1 ? [A.x0 + A.w * k.rand(0.4, 0.6)] : [A.x0 + A.w * 0.27, A.x0 + A.w * 0.73];
+    xs.forEach((cx) => {
+      const R = groups === 1 ? A.w * k.rand(0.26, 0.36) : A.w * k.rand(0.17, 0.22);
+      const bands = k.rint(4, 7);
+      const dir = 'up';
+      for (let b = 0; b < bands; b++) {
+        const col = b === bands - 1 && k.chance(0.5) ? P.bg : k.color(['sand']);
+        k.half(cx, base, R * (1 - b / bands), dir, col);
+      }
+    });
+    k.line(A.x0, base, A.x1, base, k.LW);
+    // A target of rings up in the sky.
+    if (k.chance(0.75)) {
+      const tr = A.w * k.rand(0.07, 0.11);
+      const tx = A.x0 + A.w * (k.chance(0.5) ? k.rand(0.1, 0.25) : k.rand(0.75, 0.9)) , ty = A.y0 + A.h * k.rand(0.12, 0.22);
+      const n = k.rint(2, 4);
+      for (let i = 0; i < n; i++) k.circle(tx, ty, tr * (1 - i / n), i % 2 ? P.bg : k.accent());
+    }
+    // Wire with pearls.
+    const wy = A.y0 + A.h * k.rand(0.8, 0.88);
+    k.line(A.x0, wy, A.x1, wy, k.LW * 0.6);
+    const pearls = Math.max(3, Math.round(k.rint(4, 7) * A.density));
+    for (let i = 0; i < pearls; i++) {
+      const px = A.x0 + (A.w * (i + 0.5)) / pearls;
+      const r = (A.w / pearls) * k.rand(0.18, 0.38);
+      if (k.chance(0.25)) { k.circle(px, wy, r, P.paper); k.ring(px, wy, r, k.LW * 0.7); }
+      else k.circle(px, wy, r, k.color(['sand']));
+    }
+    // A few drops hanging from the top.
+    const drops = k.rint(1, 3);
+    for (let i = 0; i < drops; i++) {
+      const dx = A.x0 + A.w * (0.3 + i * 0.2 + k.rand(-0.05, 0.05)), dl = A.h * k.rand(0.12, 0.28);
+      k.gline(dx, A.y0, dx, A.y0 + dl, k.LW * 0.6);
+      k.circle(dx, A.y0 + dl, A.w * 0.025, k.accent());
+    }
+  }
+
+  // Big triangles and diagonal bands.
+  function compDiagonals(k, A) {
+    const { P } = k;
+    const ctx = k.ctx;
+    const tri = (pts, fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); pts.slice(1).forEach((q) => ctx.lineTo(q[0], q[1])); ctx.closePath(); ctx.fill(); };
+    const { x0, y0, x1, y1, w, h } = A;
+    // Half-square triangle grid in one region.
+    const n = k.rint(2, 4);
+    const s = Math.min(w, h) * k.rand(0.11, 0.15);
+    const gx = k.chance(0.5) ? x0 : x1 - n * s, gy = k.chance(0.5) ? y0 : y1 - n * s;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const x = gx + i * s, y = gy + j * s;
+      if (k.chance(0.5)) tri([[x, y], [x + s, y], [x, y + s]], k.color(['sand']));
+      else tri([[x + s, y], [x + s, y + s], [x, y + s]], k.color(['sand']));
+    }
+    // Large triangles from corners.
+    const bigs = Math.max(1, Math.round(k.rint(1, 3) * Math.min(1.2, A.density)));
+    const cornerTris = [
+      [[x0, y1], [x0 + w * 0.6, y1], [x0, y1 - h * 0.6]],
+      [[x1, y0], [x1, y0 + h * 0.55], [x1 - w * 0.55, y0]],
+      [[x0 + w * 0.2, y1], [x0 + w * 0.5, y0 + h * 0.3], [x0 + w * 0.8, y1]],
+      [[x1, y1], [x1 - w * 0.45, y1], [x1, y1 - h * 0.45]],
+    ];
+    for (let i = 0; i < bigs; i++) tri(k.pick(cornerTris), k.accent());
+    // Diagonal band of parallel lines.
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+    const off = k.rand(-0.3, 0.3) * w;
+    const lines = k.rint(4, 8), gap = w * 0.018;
+    const sgn = k.chance(0.5) ? 1 : -1;
+    for (let i = 0; i < lines; i++) {
+      const o = off + i * gap;
+      if (sgn > 0) k.gline(x0 + o, y1, x1 + o, y0, k.LW * 0.6);
+      else k.gline(x0 + o, y0, x1 + o, y1, k.LW * 0.6);
+    }
+    ctx.restore();
+    // Solid diagonal bar.
+    if (k.chance(0.6)) {
+      const bw = w * 0.07, c = k.accent();
+      ctx.save(); ctx.translate((x0 + x1) / 2, (y0 + y1) / 2); ctx.rotate(sgn * -Math.PI / 4);
+      k.rect(-w * 0.45, -bw / 2 + k.rand(-0.2, 0.2) * w, w * 0.9, bw, c); ctx.restore();
+    }
+    // Circle accent.
+    const r = Math.min(w, h) * k.rand(0.08, 0.16);
+    const cx = x0 + w * k.rand(0.25, 0.75), cy = y0 + h * k.rand(0.25, 0.6);
+    if (k.chance(0.5)) k.circle(cx, cy, r, k.accent()); else { k.splitCircle(cx, cy, r, P.ink, k.accent(), k.chance(0.5)); }
+  }
+
+  // A sun on the horizon over a perspective grid.
+  function compHorizon(k, A) {
+    const { P } = k;
+    const ctx = k.ctx;
+    const hy = A.y0 + A.h * k.rand(0.5, 0.62);
+    const cx = A.x0 + A.w * k.rand(0.35, 0.65);
+    // Sky bands.
+    if (k.chance(0.5)) k.rect(A.x0, A.y0, A.w, hy - A.y0, P.sand);
+    const R = A.w * k.rand(0.2, 0.3);
+    const sunCol = k.pick([P.primary, P.bright]);
+    k.half(cx, hy, R, 'up', sunCol);
+    // Cut-out stripes through the sun.
+    const cutN = k.rint(2, 5);
+    for (let i = 0; i < cutN; i++) {
+      const y = hy - R * (0.12 + i * 0.16);
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, hy, R + 1, Math.PI, TAU); ctx.clip();
+      k.rect(cx - R - 2, y - R * 0.03 * (cutN - i) * 0.5, R * 2 + 4, R * 0.03 * (cutN - i) * 0.5 + 1, P.bg === '#16181D' ? P.bg : (k.chance(0.5) ? P.bg : P.sand));
+      ctx.restore();
+    }
+    if (k.chance(0.5)) { // mountains
+      const c = P.deep;
+      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(A.x0, hy);
+      ctx.lineTo(A.x0 + A.w * k.rand(0.1, 0.2), hy - A.h * k.rand(0.1, 0.18));
+      ctx.lineTo(A.x0 + A.w * 0.32, hy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = P.soft; ctx.beginPath(); ctx.moveTo(A.x1 - A.w * 0.35, hy);
+      ctx.lineTo(A.x1 - A.w * k.rand(0.12, 0.22), hy - A.h * k.rand(0.08, 0.15)); ctx.lineTo(A.x1, hy); ctx.closePath(); ctx.fill();
+    }
+    // Ground.
+    const ground = k.chance(0.5) ? P.deep : P.ink;
+    k.rect(A.x0, hy, A.w, A.y1 - hy, ground);
+    const lineCol = ground === P.ink ? P.bright : P.soft;
+    // Horizontal lines getting closer near the horizon.
+    const hn = Math.round(k.rint(5, 8) * Math.sqrt(A.density));
+    for (let i = 1; i <= hn; i++) {
+      const t = Math.pow(i / hn, 1.8);
+      const y = hy + (A.y1 - hy) * t;
+      if (opts_lines(k)) k.line(A.x0, y, A.x1, y, k.LW * 0.6, lineCol);
+    }
+    // Perspective lines from a vanishing point.
+    const vn = k.rint(6, 11);
+    ctx.save(); ctx.beginPath(); ctx.rect(A.x0, hy, A.w, A.y1 - hy); ctx.clip();
+    for (let i = 0; i <= vn; i++) {
+      const bx = A.x0 - A.w * 0.6 + (A.w * 2.2 * i) / vn;
+      if (opts_lines(k)) k.line(cx, hy, bx, A.y1, k.LW * 0.6, lineCol);
+    }
+    ctx.restore();
+    k.line(A.x0, hy, A.x1, hy, k.LW);
+  }
+  // Grid-style lines in the horizon follow the "Grid lines" switch too.
+  const opts_lines = (k) => k.showLines;
+
+  const COMP_FNS = { grid: compGrid, orbs: compOrbs, bars: compBars, totem: compTotem, arches: compArches,
+    tiles: compTiles, towers: compTowers, rings: compRings, diagonals: compDiagonals, horizon: compHorizon };
 
   // ---------- Paper grain ----------
   let grainTile = null;
@@ -685,7 +913,7 @@
 
     const rng = makeRng(String(settings.seed) + '|' + settings.composition + '|' + settings.format);
     let comp = settings.composition;
-    if (comp === 'random' || !COMP_FNS[comp]) comp = Object.keys(COMP_FNS)[Math.floor(rng() * 5)];
+    if (comp === 'random' || !COMP_FNS[comp]) comp = Object.keys(COMP_FNS)[Math.floor(rng() * Object.keys(COMP_FNS).length)];
 
     const detailMul = [0.6, 0.8, 1, 1.2, 1.45][(settings.detail || 3) - 1];
     const frameRoll = rng();
