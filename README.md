@@ -2,6 +2,7 @@
 
 A small web app that generates Bauhaus-style abstract geometric art in the browser.
 Plain HTML, CSS and JavaScript: no build step, no server, no API, no AI.
+see it in action [here](https://sepehrime.github.io/abstraite/)
 
 ## Run it
 
