@@ -1,113 +1,178 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Abstraite — geometric art generator</title>
-  <meta name="description" content="Generate Bauhaus-style abstract geometric art in your browser.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <header class="top">
-    <div class="brand">
-      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
-        <rect x="2" y="2" width="20" height="44" fill="#1F4B6B"/>
-        <circle cx="35" cy="13" r="11" fill="#E2402F"/>
-        <path d="M24 46a12 12 0 0 1 22 0z" fill="#F0B23C"/>
-      </svg>
-      <div>
-        <h1>Abstraite</h1>
-        <p class="tag">Geometric art, made in your browser</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Abstraite — geometric art generator</title>
+    <meta
+      name="description"
+      content="Generate Bauhaus-style abstract geometric art in your browser."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="44" fill="#1F4B6B" />
+          <circle cx="35" cy="13" r="11" fill="#E2402F" />
+          <path d="M24 46a12 12 0 0 1 22 0z" fill="#F0B23C" />
+        </svg>
+        <div>
+          <h1>Abstraite</h1>
+          <p class="tag">Geometric art, made in your browser</p>
+        </div>
       </div>
-    </div>
-    <nav class="nav">
-      <a href="index.html" aria-current="page">Generator</a>
-      <a href="gallery.html">Gallery</a>
-    </nav>
-  </header>
+      <nav class="nav">
+        <a href="index.html" aria-current="page">Home</a>
+        <a href="gallery.html">Gallery</a>
+      </nav>
+    </header>
 
-  <main class="layout">
-    <section class="stage" aria-label="Artwork">
-      <div class="canvas-wrap">
-        <canvas id="art" aria-label="Generated artwork"></canvas>
-      </div>
-      <div class="actions">
-        <button id="generate" class="btn primary" title="Shortcut: Space">Generate <kbd>Space</kbd></button>
-        <button id="save" class="btn" title="Shortcut: S">Save PNG <kbd>S</kbd></button>
-        <button id="addGallery" class="btn" type="button" title="Save this seed + settings to the gallery">Add to gallery</button>
-        <label class="size">
-          <span>Size</span>
-          <select id="exportScale">
-            <option value="1">1×</option>
-            <option value="2" selected>2×</option>
-            <option value="4">4×</option>
-          </select>
-        </label>
-      </div>
-      <p class="meta" id="meta"></p>
-      <div class="history-wrap">
-        <h2>Recent</h2>
-        <div id="history" class="history" aria-label="Recent artworks"></div>
-      </div>
-    </section>
+    <main class="layout">
+      <section class="stage" aria-label="Artwork">
+        <div class="canvas-wrap">
+          <canvas id="art" aria-label="Generated artwork"></canvas>
+        </div>
+        <div class="actions">
+          <button id="generate" class="btn primary" title="Shortcut: Space">
+            Create
+          </button>
+          <div class="save-menu">
+            <button
+              id="save"
+              class="btn"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="saveSizes"
+              title="Choose a size. Shortcut: S saves at the last size"
+            >
+              Save PNG
+            </button>
+            <div id="saveSizes" class="menu" role="menu" hidden>
+              <button type="button" role="menuitem" data-scale="1">1× <span></span></button>
+              <button type="button" role="menuitem" data-scale="2">2× <span></span></button>
+              <button type="button" role="menuitem" data-scale="4">4× <span></span></button>
+            </div>
+          </div>
+          <button
+            id="addGallery"
+            class="btn"
+            type="button"
+            title="Save this seed + settings to the gallery"
+          >
+            Add to gallery
+          </button>
+        </div>
+        <p class="meta" id="meta"></p>
+        <div class="history-wrap">
+          <h2>Recent</h2>
+          <div id="history" class="history" aria-label="Recent artworks"></div>
+        </div>
+      </section>
 
-    <aside class="panel" aria-labelledby="settingsTitle">
-      <h2 class="panel-title" id="settingsTitle">Settings</h2>
-      <details class="group" data-key="composition">
-        <summary><span class="g-label">Geometry</span><span class="g-value"></span></summary>
-        <div class="chips"></div>
-      </details>
-      <details class="group" data-key="palette">
-        <summary><span class="g-label">Colour</span><span class="g-value"></span></summary>
-        <div class="chips palettes"></div>
-      </details>
-      <details class="group" data-key="vibe">
-        <summary><span class="g-label">Vibe</span><span class="g-value"></span></summary>
-        <div class="chips"></div>
-      </details>
-      <div class="pair">
-        <div class="row">
-          <label for="format">Format</label>
-          <select id="format" data-key="format"></select>
+      <aside class="panel" aria-labelledby="settingsTitle">
+        <h2 class="panel-title" id="settingsTitle">Settings</h2>
+        <details class="group" data-key="composition">
+          <summary>
+            <span class="g-label">Geometry</span><span class="g-value"></span>
+          </summary>
+          <div class="chips"></div>
+        </details>
+        <details class="group" data-key="palette">
+          <summary>
+            <span class="g-label">Colour</span><span class="g-value"></span>
+          </summary>
+          <div class="chips palettes"></div>
+        </details>
+        <details class="group" data-key="vibe">
+          <summary>
+            <span class="g-label">Vibe</span><span class="g-value"></span>
+          </summary>
+          <div class="chips"></div>
+        </details>
+        <div class="pair">
+          <div class="row">
+            <label for="format">Format</label>
+            <select id="format" data-key="format"></select>
+          </div>
+          <div class="row">
+            <label for="frame">Frame</label>
+            <select id="frame" data-key="frame"></select>
+          </div>
         </div>
         <div class="row">
-          <label for="frame">Frame</label>
-          <select id="frame" data-key="frame"></select>
+          <label for="detail">Detail <output id="detailOut">3</output></label>
+          <input type="range" id="detail" min="1" max="5" step="1" value="3" />
         </div>
-      </div>
-      <div class="row">
-        <label for="detail">Detail <output id="detailOut">3</output></label>
-        <input type="range" id="detail" min="1" max="5" step="1" value="3">
-      </div>
-      <div class="toggles">
-        <label><input type="checkbox" id="gridLines" checked> Grid lines</label>
-        <label><input type="checkbox" id="grain" checked> Paper grain</label>
-      </div>
-      <div class="row">
-        <label for="seed">Seed</label>
-        <div class="seed">
-          <input id="seed" type="text" maxlength="24" spellcheck="false">
-          <button id="copyLink" class="btn small" type="button" title="Copy a link to this exact artwork">Copy link</button>
+        <div class="toggles">
+          <label
+            ><input type="checkbox" id="gridLines" checked /> Grid lines</label
+          >
+          <label
+            ><input type="checkbox" id="grain" checked /> Paper grain</label
+          >
         </div>
-        <p class="hint">Same seed + same settings = same artwork.</p>
-      </div>
-    </aside>
-  </main>
+        <div class="row">
+          <label for="seed">Seed</label>
+          <div class="seed">
+            <input id="seed" type="text" maxlength="24" spellcheck="false" />
+            <button
+              id="copyLink"
+              class="btn small"
+              type="button"
+              title="Copy a link to this exact artwork"
+            >
+              Copy link
+            </button>
+          </div>
+          <p class="hint">Same seed + same settings = same artwork.</p>
+        </div>
+      </aside>
+    </main>
 
-  <footer class="foot">
-    <span>© Abstraite, 2026</span>
-    <a href="https://www.instagram.com/randomly_abstracted/" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>
-      @obstraite on Instagram
-    </a>
-  </footer>
+    <footer class="foot">
+      <span>© Abstraite, 2026</span>
+      <a
+        href="https://www.instagram.com/randomly_abstracted/"
+        target="_blank"
+        rel="noopener"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r="4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <circle cx="17.3" cy="6.7" r="1.2" fill="currentColor" />
+        </svg>
+        @obstraite on Instagram
+      </a>
+    </footer>
 
-  <script src="generator.js"></script>
-  <script src="link.js"></script>
-  <script src="gallery-store.js"></script>
-  <script src="app.js"></script>
-</body>
+    <script src="generator.js"></script>
+    <script src="link.js"></script>
+    <script src="gallery-store.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

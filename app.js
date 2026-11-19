@@ -86,7 +86,14 @@
     draw(true);
   });
   $('generate').addEventListener('click', regenerate);
-  $('save').addEventListener('click', save);
+  $('save').addEventListener('click', () => toggleSaveMenu($('saveSizes').hidden));
+  $('saveSizes').querySelectorAll('[data-scale]').forEach((b) => b.addEventListener('click', () => {
+    toggleSaveMenu(false);
+    save(+b.dataset.scale);
+  }));
+  // Close the size menu on an outside click or Escape.
+  document.addEventListener('click', (e) => { if (!e.target.closest('.save-menu')) toggleSaveMenu(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleSaveMenu(false); });
   $('copyLink').addEventListener('click', copyLink);
   $('addGallery').addEventListener('click', () => {
     toast(gallery.add(state) ? 'Added to gallery' : 'Already in the gallery');
@@ -95,7 +102,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea, button, summary') || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.code === 'Space') { e.preventDefault(); regenerate(); }
-    else if (e.key === 's' || e.key === 'S') { e.preventDefault(); save(); }
+    else if (e.key === 's' || e.key === 'S') { e.preventDefault(); save(lastScale); }
   });
 
   function regenerate() { state.seed = randomSeed(); draw(true); }
@@ -166,8 +173,28 @@
   }
 
   // ---------- Save ----------
-  function save() {
-    const scale = +$('exportScale').value || 2;
+  let lastScale = 2;
+
+  /** Open or close the size menu; when opening, label each size with its pixel dimensions. */
+  function toggleSaveMenu(open) {
+    const menu = $('saveSizes');
+    if (open) {
+      const F = FORMATS[state.format];
+      menu.querySelectorAll('[data-scale]').forEach((b) => {
+        const k = +b.dataset.scale;
+        b.querySelector('span').textContent = `${F.w * k} × ${F.h * k} px`;
+        b.setAttribute('aria-current', String(k === lastScale));
+      });
+    }
+    if (!open && menu.contains(document.activeElement)) $('save').focus();
+    menu.hidden = !open;
+    $('save').setAttribute('aria-expanded', String(open));
+    if (open) menu.querySelector('[aria-current="true"]').focus();
+  }
+
+  /** Download the current artwork as a PNG at the given scale (1 = 1000px on the short side). */
+  function save(scale) {
+    lastScale = scale;
     const out = document.createElement('canvas');
     render(out, state, scale);
     const name = `abstraite-${lastComp}-${state.palette}-${state.seed}.png`.toLowerCase();
