@@ -23,6 +23,10 @@
         <p class="tag">Geometric art, made in your browser</p>
       </div>
     </div>
+    <nav class="nav">
+      <a href="index.html" aria-current="page">Generator</a>
+      <a href="gallery.html">Gallery</a>
+    </nav>
   </header>
 
   <main class="layout">
@@ -33,6 +37,7 @@
       <div class="actions">
         <button id="generate" class="btn primary" title="Shortcut: Space">Generate <kbd>Space</kbd></button>
         <button id="save" class="btn" title="Shortcut: S">Save PNG <kbd>S</kbd></button>
+        <button id="addGallery" class="btn" type="button" title="Save this seed + settings to the gallery">Add to gallery</button>
         <label class="size">
           <span>Size</span>
           <select id="exportScale">
@@ -101,6 +106,8 @@
   </footer>
 
   <script src="generator.js"></script>
+  <script src="link.js"></script>
+  <script src="gallery-store.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

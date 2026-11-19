@@ -1,7 +1,7 @@
 /* Abstraite — UI wiring: controls, history, saving, shareable links. */
 (function () {
   'use strict';
-  const { PALETTES, VIBES, COMPOSITIONS, FORMATS, render, randomSeed } = window.Abstraite;
+  const { PALETTES, VIBES, COMPOSITIONS, FORMATS, render, randomSeed, encodeSettings, decodeSettings, gallery } = window.Abstraite;
 
   // Tiny icons for the geometry chips.
   const sv = (body) => '<svg viewBox="0 0 16 16" aria-hidden="true">' + body + '</svg>';
@@ -30,7 +30,7 @@
   const DEFAULTS = { composition: 'random', palette: 'bauhaus', vibe: 'balanced', detail: 3,
     format: 'square', frame: 'auto', gridLines: true, grain: true, seed: randomSeed() };
 
-  const state = Object.assign({}, DEFAULTS, readHash());
+  const state = Object.assign({}, DEFAULTS, decodeSettings(location.hash.slice(1)));
   let lastComp = null;
   const recent = [];
 
@@ -88,6 +88,9 @@
   $('generate').addEventListener('click', regenerate);
   $('save').addEventListener('click', save);
   $('copyLink').addEventListener('click', copyLink);
+  $('addGallery').addEventListener('click', () => {
+    toast(gallery.add(state) ? 'Added to gallery' : 'Already in the gallery');
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea, button, summary') || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -181,23 +184,7 @@
 
   // ---------- Shareable link (settings live in the URL hash) ----------
   function writeHash() {
-    const p = new URLSearchParams({ c: state.composition, p: state.palette, v: state.vibe, d: state.detail,
-      f: state.format, fr: state.frame, l: state.gridLines ? 1 : 0, g: state.grain ? 1 : 0, s: state.seed });
-    window.history.replaceState(null, "", "#" + p.toString());
-  }
-  function readHash() {
-    const p = new URLSearchParams(location.hash.slice(1));
-    const out = {};
-    if (COMPOSITIONS[p.get('c')]) out.composition = p.get('c');
-    if (PALETTES[p.get('p')]) out.palette = p.get('p');
-    if (VIBES[p.get('v')]) out.vibe = p.get('v');
-    const d = +p.get('d'); if (d >= 1 && d <= 5) out.detail = d;
-    if (FORMATS[p.get('f')]) out.format = p.get('f');
-    if (['auto', 'on', 'off'].includes(p.get('fr'))) out.frame = p.get('fr');
-    if (p.has('l')) out.gridLines = p.get('l') === '1';
-    if (p.has('g')) out.grain = p.get('g') === '1';
-    if (p.get('s')) out.seed = p.get('s').slice(0, 24).toUpperCase();
-    return out;
+    window.history.replaceState(null, '', '#' + encodeSettings(state));
   }
   function copyLink() {
     const url = location.href;
