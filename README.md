@@ -17,11 +17,17 @@ Double-click `index.html` (or drag it into any modern browser). That's it.
 - **Generate** (or press Space) for a new piece. **Save PNG** (or press S) downloads it at 1×, 2× or 4×.
 - Every piece has a **seed**. Same seed + same settings = same artwork, so **Copy link** shares the exact piece.
   Changing colour or vibe keeps the seed, so you can recolour a piece you like.
+- **Add to gallery** saves a piece to the **Gallery** page. Only its seed and settings are stored (in your browser's
+  local storage), never the image; thumbnails are re-rendered from them. **View or modify** opens the piece back in the
+  generator with every setting restored. The gallery is per browser.
 
 ## Files
 
-- `index.html` – page layout
+- `index.html` – generator page layout
+- `gallery.html` – gallery page layout
 - `style.css` – styling
 - `generator.js` – the art engine (palettes, vibes, the ten compositions)
 - `app.js` – controls, history, saving, shareable links
-- `example/` – the reference pieces the style is based on
+- `link.js` – encodes settings + seed to/from the URL hash (shared by both pages)
+- `gallery-store.js` – saves and loads gallery entries in localStorage
+- `gallery.js` – renders the gallery thumbnails
