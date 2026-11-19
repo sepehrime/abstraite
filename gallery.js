@@ -1,8 +1,8 @@
 /* Abstraite — gallery page: re-renders each saved artwork from its seed + settings. */
 (function () {
   'use strict';
-  const { COMPOSITIONS, PALETTES, VIBES, render, decodeSettings, gallery } = window.Abstraite;
-  const THUMB_SCALE = 0.32; // 1000px format -> ~320px thumbnail
+  const { COMPOSITIONS, PALETTES, VIBES, FORMATS, render, decodeSettings, gallery } = window.Abstraite;
+  const THUMB_SCALE = 0.8; // 1000px format -> 800px, sharp at 3 columns on retina screens
   const grid = document.getElementById('gallery');
 
   /** Build one gallery card for a saved entry. */
@@ -14,6 +14,9 @@
     const c = document.createElement('canvas');
     const comp = render(c, s, THUMB_SCALE);
     c.setAttribute('aria-label', 'Artwork ' + s.seed);
+    // Fit inside the square mat: portrait pieces are narrower, others fill the width.
+    const F = FORMATS[s.format];
+    c.style.width = 100 * Math.min(1, F.w / F.h) + '%';
 
     const cap = document.createElement('figcaption');
     cap.textContent = `${COMPOSITIONS[comp].name} · ${PALETTES[s.palette].name} · ${VIBES[s.vibe].name} · ${s.seed}`;
@@ -29,7 +32,11 @@
     del.addEventListener('click', () => { gallery.remove(entry.hash); draw(); });
     actions.append(open, del);
 
-    fig.append(c, cap, actions);
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    frame.append(c, actions);
+
+    fig.append(frame, cap);
     return fig;
   }
 
