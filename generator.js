@@ -45,13 +45,14 @@
     grid:   { name: 'Grid & blocks' },
     orbs:   { name: 'Circles' },
     bars:   { name: 'Bars & stripes' },
-    totem:  { name: 'Totem' },
-    arches: { name: 'Arches & moons' },
     tiles:  { name: 'Tile mosaic' },
-    towers: { name: 'Stacked city' },
     rings:  { name: 'Rainbows & pearls' },
     diagonals: { name: 'Triangles & diagonals' },
-    horizon: { name: 'Sun & horizon' },
+    shards: { name: 'Shards' },
+    splinters: { name: 'Splinters' },
+    medallion: { name: 'Medallion' },
+    ribbons: { name: 'Ribbons' },
+    peaks: { name: 'Peaks' },
     random: { name: 'Surprise me' },
   };
 
@@ -82,6 +83,13 @@
     let s = '';
     for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
     return s;
+  }
+
+  /** Blend two #RRGGBB colours; t = 0 gives a, t = 1 gives b. */
+  function mix(a, b, t) {
+    const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    const ch = (s) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
+    return '#' + ((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1);
   }
 
   // ---------- Drawing kit ----------
@@ -160,12 +168,6 @@
       cuts.forEach((c, i) => { const ny = y + h * c; rect(x, yy, w, ny - yy + 0.5, colors[i]); yy = ny; });
       ctx.restore();
     }
-    function arch(x, y, w, h, fill) {
-      const r = w / 2;
-      ctx.fillStyle = fill; ctx.beginPath();
-      ctx.moveTo(x, y + h); ctx.lineTo(x, y + r); ctx.arc(x + r, y + r, r, Math.PI, 0);
-      ctx.lineTo(x + w, y + h); ctx.closePath(); ctx.fill();
-    }
     function stripes(x, y, w, h, n, colors, vertical) {
       for (let i = 0; i < n; i++) {
         const c = colors[i % colors.length];
@@ -211,8 +213,16 @@
       return Array.from({ length: n }, (_, i) => Math.round(a + ((b - a) * (i + 1)) / (n + 1)));
     }
 
-    return { rand, rint, pick, chance, color, accent, rect, box, line, gline, circle, ring, pie, half,
-      splitCircle, capsule, bandedCapsule, arch, stripes, hatch, checker, wave, crosshair, cuts, LW, P, V, ctx, showLines: opts.gridLines };
+    // Filled polygon from [[x, y], ...]; optional ink outline.
+    function poly(pts, fill, lw = 0) {
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+      if (lw) { ctx.strokeStyle = P.ink; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.stroke(); }
+    }
+
+    return { rand, rint, pick, chance, color, accent, rect, box, line, gline, circle, ring, pie, half, poly, mix,
+      splitCircle, capsule, bandedCapsule, stripes, hatch, checker, wave, crosshair, cuts, LW, P, V, ctx, showLines: opts.gridLines };
   }
 
   // ---------- Compositions ----------
@@ -431,230 +441,6 @@
     }
   }
 
-  function compTotem(k, A) {
-    if (k.chance(0.45)) return compMask(k, A);
-    const { P, V } = k;
-    const d = A.density;
-    const cx = (A.x0 + A.x1) / 2;
-    const u = Math.min(A.w, A.h * 0.9) / 10;
-    const sym = k.chance(V.symmetry);
-
-    // Side combs of vertical lines + horizontal crossings.
-    const combN = Math.round(k.rint(3, 6) * Math.max(0.6, d));
-    const offs = []; let o = u * 1.6;
-    for (let i = 0; i < combN; i++) { offs.push(o); o += u * k.rand(0.18, 0.45); }
-    const cTop = A.y0 + A.h * k.rand(0.2, 0.3), cBot = A.y1 - A.h * 0.05;
-    offs.forEach((off) => {
-      k.gline(cx - off, cTop + (sym ? 0 : k.rand(0, u)), cx - off, cBot, k.LW * 0.7);
-      k.gline(cx + off, cTop + (sym ? 0 : k.rand(0, u)), cx + off, cBot - (sym ? 0 : k.rand(0, u * 2)), k.LW * 0.7);
-    });
-    const crossN = k.rint(2, 4);
-    for (let i = 0; i < crossN; i++) {
-      const y = cTop + ((cBot - cTop) * (i + 0.5)) / crossN;
-      k.gline(cx - o - u * 0.3, y, cx + o + u * 0.3, y, k.LW * 0.7);
-    }
-
-    // The stack.
-    let y = A.y0 + u * 0.2;
-    const headR = u * k.rand(0.65, 0.95);
-    if (k.chance(0.6)) { // crown
-      k.box(cx - u * 0.75, y + u * 0.35, u * 1.5, u * 0.65, k.LW * 0.8);
-      k.line(cx, y, cx, y + u * 0.35, k.LW * 0.8); k.line(cx - u * 0.3, y + u * 0.15, cx + u * 0.3, y + u * 0.15, k.LW * 0.8);
-      y += u * 0.7;
-    }
-    const barY = y + headR * 1.25;
-    const barW = u * k.rand(3.6, 5.2), barH = u * k.rand(0.45, 0.7);
-    k.rect(cx - barW / 2, barY, barW, barH, P.ink);
-    k.circle(cx, y + headR, headR, k.accent());
-    y = barY + barH;
-
-    const colW = u * k.rand(0.55, 0.85);
-    const remaining = A.y1 - u * 1.6 - y;
-    const segs = k.rint(2, 3);
-    let sy = y;
-    for (let s = 0; s < segs; s++) {
-      const h = (remaining / segs) * k.rand(0.75, 1.15);
-      if (s === 0 && k.chance(0.7)) { // split pair of columns
-        k.rect(cx - colW, sy, colW, h * k.rand(0.6, 1), k.accent());
-        k.rect(cx, sy, colW, h, k.accent());
-      } else {
-        const off = sym ? 0 : k.rand(-0.3, 0.3) * colW;
-        k.rect(cx - colW / 2 + off, sy, colW, h, s === segs - 1 ? P.deep : P.ink);
-      }
-      sy += h;
-    }
-    const footR = u * k.rand(0.55, 0.8);
-    k.circle(cx, Math.min(sy + footR * 0.6, A.y1 - footR), footR, P.ink);
-    k.line(cx - u * 0.9, A.y1, cx + u * 0.9, A.y1, k.LW * 0.8);
-  }
-
-  function compMask(k, A) {
-    const { P } = k;
-    const cx = (A.x0 + A.x1) / 2;
-    const u = Math.min(A.w, A.h) / 10;
-    const F = u * k.rand(3.2, 3.8);          // face width
-    const R = F / 2;
-    const top = A.y0 + A.h * 0.08;
-    const total = Math.min(A.h * 0.84, u * 9.5);
-    const cA = k.accent(), cB = k.accent(), cC = k.accent();
-    const bandH = total * 0.27, bandY = top + total * 0.33, bandW = F * k.rand(1.3, 1.55);
-
-    k.line(cx - F * 0.75, top - u * 0.15, cx + F * 0.75, top - u * 0.15);
-    // Each quarter of the face is one path (quarter circle + straight side), so no seams.
-    const botY = top + total - R;
-    const by2 = bandY + bandH;
-    const cD = cB === P.deep ? cC : P.deep;
-    function quarterFace(dir, isTop, fill) {
-      const ctx = k.ctx;
-      const ox = cx + dir * R;
-      ctx.fillStyle = fill; ctx.beginPath();
-      if (isTop) {
-        ctx.moveTo(cx, bandY + 1); ctx.lineTo(ox, bandY + 1); ctx.lineTo(ox, top + R);
-        ctx.arc(cx, top + R, R, dir < 0 ? Math.PI : 0, -Math.PI / 2, dir > 0);
-      } else {
-        ctx.moveTo(cx, by2 - 1); ctx.lineTo(ox, by2 - 1); ctx.lineTo(ox, botY);
-        ctx.arc(cx, botY, R, dir < 0 ? Math.PI : 0, Math.PI / 2, dir < 0);
-      }
-      ctx.closePath(); ctx.fill();
-    }
-    quarterFace(-1, true, cA); quarterFace(1, true, cB);
-    quarterFace(-1, false, cD); quarterFace(1, false, cA);
-    // Band with brow and eyes.
-    k.rect(cx - bandW / 2, bandY, bandW, bandH, P.soft);
-    const browH = bandH * 0.32;
-    k.rect(cx - F * 0.48, bandY + bandH * 0.12, F * 0.96, browH, P.ink);
-    const eyeR = F * k.rand(0.13, 0.17);
-    const eyeY = bandY + bandH * 0.12 + browH;
-    [-1, 1].forEach((s) => {
-      const ex = cx + s * F * 0.29;
-      k.half(ex, eyeY, eyeR, 'down', P.paper);
-      k.ctx.strokeStyle = P.ink; k.ctx.lineWidth = k.LW;
-      k.ctx.beginPath(); k.ctx.arc(ex, eyeY, eyeR, 0, Math.PI); k.ctx.stroke();
-      if (k.chance(0.5)) k.circle(ex, eyeY + eyeR * 0.35, eyeR * 0.3, P.ink);
-    });
-    k.rect(cx - u * 0.18, eyeY, u * 0.36, bandH * 0.45, P.bright);
-    // Axes.
-    k.gline(cx, top, cx, top + total + u * 0.15, k.LW * 0.8);
-    k.gline(cx - bandW / 2 - u * 0.15, bandY + bandH / 2, cx + bandW / 2 + u * 0.15, bandY + bandH / 2, k.LW * 0.8);
-  }
-
-  function compArches(k, A) {
-    const v = k.rand();
-    if (v < 0.4) return archBowl(k, A);
-    if (v < 0.7) return archRow(k, A);
-    return archHourglass(k, A);
-  }
-
-  function archBowl(k, A) {
-    const { P } = k;
-    const cx = (A.x0 + A.x1) / 2;
-    const u = Math.min(A.w, A.h) / 10;
-    const colW = u * k.rand(0.7, 1);
-    // Horizontal line sets.
-    const sets = [A.y0 + A.h * 0.08, A.y1 - A.h * 0.2];
-    sets.forEach((sy) => {
-      for (let i = 0; i < 3; i++) {
-        const y = sy + i * u * 0.5;
-        k.gline(A.x0 + u * 0.3, y, cx - colW - u * 0.2, y, k.LW * 0.8);
-        k.gline(cx + colW + u * 0.2, y, A.x1 - u * 0.3, y, k.LW * 0.8);
-      }
-    });
-    k.gline(A.x0, A.y0 + A.h * 0.4, A.x1, A.y0 + A.h * 0.4);
-    // Two columns.
-    const c1 = k.accent(), c2 = k.accent();
-    k.rect(cx - colW, A.y0 + u * 0.3, colW, A.h - u * 0.6, c1);
-    k.rect(cx, A.y0 + u * 0.3, colW, A.h - u * 0.6, c2);
-    // Bowl.
-    const R = u * k.rand(2, 2.5);
-    const cy = A.y0 + A.h * 0.52;
-    k.rect(cx - R, cy - R * 0.3, R * 2, R * 0.3, P.primary === c1 ? P.bright : P.primary);
-    k.pie(cx - R, cy - R * 0.3, R * 0.8, 0, Math.PI / 2, P.paper);
-    k.half(cx, cy, R, 'down', P.deep);
-    // Eye.
-    const er = R * 0.62;
-    k.circle(cx, cy - R * 0.05, er, P.primary);
-    k.circle(cx, cy - R * 0.05, er * 0.87, P.deep);
-    k.splitCircle(cx, cy - R * 0.05, er * 0.75, P.ink, P.paper, true);
-    if (k.chance(0.5)) k.line(cx - R * 1.4, cy + R * 0.35, cx - R * 0.6, cy + R * 0.35, k.LW * 0.6, P.soft);
-  }
-
-  function archRow(k, A) {
-    const { P } = k;
-    const n = Math.max(2, Math.round(k.rint(3, 5) * Math.min(1.2, A.density)));
-    const base = A.y1 - A.h * 0.08;
-    const gap = A.w * 0.03;
-    const w = (A.w * 0.84 - gap * (n - 1)) / n;
-    const x0 = A.x0 + A.w * 0.08;
-    // Sun.
-    const sunR = A.w * k.rand(0.07, 0.11);
-    const sunX = A.x0 + A.w * k.rand(0.2, 0.8), sunY = A.y0 + A.h * k.rand(0.12, 0.22);
-    if (k.chance(0.5)) k.splitCircle(sunX, sunY, sunR, P.bright, P.primary, false);
-    else k.circle(sunX, sunY, sunR, k.accent());
-    for (let i = 0; i < 4; i++) k.gline(A.x0, A.y0 + A.h * (0.3 + i * 0.04), A.x0 + A.w * k.rand(0.2, 0.5), A.y0 + A.h * (0.3 + i * 0.04), k.LW * 0.6);
-    for (let i = 0; i < n; i++) {
-      const x = x0 + i * (w + gap);
-      const h = A.h * k.rand(0.35, 0.65);
-      const t = k.rand();
-      const col = k.accent();
-      if (t < 0.35) k.arch(x, base - h, w, h, col);
-      else if (t < 0.6) { // split arch
-        k.ctx.save(); k.ctx.beginPath(); k.ctx.rect(x, 0, w / 2, 1e5); k.ctx.clip(); k.arch(x, base - h, w, h, col); k.ctx.restore();
-        k.ctx.save(); k.ctx.beginPath(); k.ctx.rect(x + w / 2, 0, w / 2, 1e5); k.ctx.clip(); k.arch(x, base - h, w, h, k.accent()); k.ctx.restore();
-      } else if (t < 0.8) { // pillar with half moon on top
-        k.rect(x, base - h + w / 2, w, h - w / 2, col);
-        k.half(x + w / 2, base - h + w / 2, w / 2, 'up', P.ink);
-      } else { // stepped
-        k.rect(x, base - h, w, h, col);
-        k.rect(x + w * 0.25, base - h - w * 0.4, w * 0.5, w * 0.4, P.ink);
-      }
-      if (k.chance(0.35)) k.circle(x + w / 2, base - h * 0.35, w * 0.18, P.paper);
-    }
-    k.line(A.x0, base, A.x1, base, k.LW * 1.2);
-  }
-
-  function archHourglass(k, A) {
-    const { P } = k;
-    const cx = (A.x0 + A.x1) / 2;
-    const top = A.y0 + A.h * 0.12, bot = A.y1 - A.h * 0.1, mid = (top + bot) / 2;
-    const H = bot - top;
-    const W = Math.min(A.w * 0.5, H * 0.8);
-    // Grid.
-    [0.08, 0.28, 0.72, 0.92].forEach((f) => k.gline(A.x0 + A.w * f, A.y0, A.x0 + A.w * f, A.y1, k.LW * 0.8));
-    [0.22, 0.5, 0.78].forEach((f) => k.gline(A.x0, A.y0 + A.h * f, A.x1, A.y0 + A.h * f, k.LW * 0.8));
-    // Columns with concave inner edges.
-    const colW = W * 0.28;
-    function side(dir, cTop, cBot) {
-      const outer = cx + dir * W / 2, inner = cx + dir * (W / 2 - colW);
-      const ctx = k.ctx;
-      [[top, mid, cTop], [mid, bot, cBot]].forEach(([y0, y1, col]) => {
-        ctx.fillStyle = col; ctx.beginPath();
-        ctx.moveTo(outer, y0); ctx.lineTo(inner, y0);
-        const pinch = cx + dir * colW * 0.15;
-        if (y0 === top) ctx.bezierCurveTo(inner, y0 + H * 0.25, pinch, y1 - H * 0.12, pinch, y1);
-        else ctx.bezierCurveTo(pinch, y0 + H * 0.12, inner, y1 - H * 0.25, inner, y1);
-        ctx.lineTo(outer, y1); ctx.closePath(); ctx.fill();
-      });
-    }
-    side(-1, P.deep, P.primary);
-    side(1, P.bright, P.soft);
-    // Ink hourglass in the middle.
-    const hw = W / 2 - colW * 1.15, ht = top + H * 0.15, hb = bot - H * 0.15;
-    const ctx = k.ctx;
-    ctx.fillStyle = P.ink; ctx.beginPath();
-    ctx.moveTo(cx - hw, ht); ctx.lineTo(cx + hw, ht);
-    ctx.bezierCurveTo(cx + hw, ht + H * 0.25, cx + 3, mid - H * 0.1, cx + 3, mid);
-    ctx.bezierCurveTo(cx + 3, mid + H * 0.1, cx + hw, hb - H * 0.25, cx + hw, hb);
-    ctx.lineTo(cx - hw, hb);
-    ctx.bezierCurveTo(cx - hw, hb - H * 0.25, cx - 3, mid + H * 0.1, cx - 3, mid);
-    ctx.bezierCurveTo(cx - 3, mid - H * 0.1, cx - hw, ht + H * 0.25, cx - hw, ht);
-    ctx.fill();
-    k.line(cx, ht, cx, hb, k.LW * 0.5, P.paper);
-    // Red crossbar.
-    k.rect(A.x0 + A.w * 0.08, top - k.LW * 2, A.w * 0.84, k.LW * 2, P.primary);
-    if (k.chance(0.6)) k.rect(cx + W / 2 + A.w * 0.03, mid + H * 0.1, k.LW * 1.5, H * 0.25, P.bright);
-  }
-
-
   // Square tiles, each with a simple motif (quarter circles, halves, triangles…).
   function compTiles(k, A) {
     const { P } = k;
@@ -692,48 +478,6 @@
       for (let j = 1; j < rows; j++) k.gline(ox, oy + j * s, ox + cols * s, oy + j * s, k.LW * 0.5);
     }
     if (!A.frame) k.box(ox, oy, cols * s, rows * s, k.LW);
-  }
-
-  // A small skyline of stacked blocks.
-  function compTowers(k, A) {
-    const { P } = k;
-    const base = A.y1 - A.h * 0.06;
-    const n = Math.max(3, Math.round(k.rint(4, 6) * Math.min(1.3, A.density)));
-    const unit = (A.w * 0.86) / n;
-    // Sky: sun/moon + thin lines.
-    const sunR = A.w * k.rand(0.06, 0.1);
-    const sx = A.x0 + A.w * k.rand(0.15, 0.85), sy = A.y0 + A.h * k.rand(0.1, 0.2);
-    if (k.chance(0.5)) k.circle(sx, sy, sunR, k.accent()); else k.splitCircle(sx, sy, sunR, P.ink, P.paper, true);
-    for (let i = 0; i < k.rint(2, 4); i++) {
-      const y = A.y0 + A.h * (0.06 + i * 0.05);
-      k.gline(A.x0 + A.w * k.rand(0, 0.3), y, A.x1 - A.w * k.rand(0, 0.3), y, k.LW * 0.6);
-    }
-    let x = A.x0 + A.w * 0.07;
-    for (let i = 0; i < n; i++) {
-      const w = unit * k.rand(0.75, 1.05);
-      const h = A.h * k.rand(0.3, 0.72);
-      let y = base;
-      const blocks = k.rint(2, 4);
-      for (let b = 0; b < blocks; b++) {
-        const bh = (h / blocks) * k.rand(0.7, 1.3);
-        const inset = b === 0 ? 0 : w * k.rand(0, 0.2);
-        const col = k.color(['sand']);
-        k.rect(x + inset, y - bh, w - inset * 2, bh + 0.5, col);
-        if (k.chance(0.25)) k.hatch(x + inset, y - bh, w - inset * 2, bh, k.rint(3, 6), false, k.LW * 0.5);
-        else if (k.chance(0.2) && bh > w * 0.6) { // windows
-          const cs = (w - inset * 2) / 4;
-          for (let c = 0; c < 2; c++) for (let r = 0; r < Math.floor(bh / (cs * 2)); r++)
-            k.rect(x + inset + cs * (0.5 + c * 2), y - bh + cs * (0.5 + r * 2), cs, cs, col === P.paper ? P.ink : P.paper);
-        }
-        y -= bh;
-      }
-      const top = k.rand();
-      if (top < 0.3) k.half(x + w / 2, y, w * 0.4, 'up', k.accent());
-      else if (top < 0.5) { const ctx = k.ctx; ctx.fillStyle = P.ink; ctx.beginPath(); ctx.moveTo(x + w * 0.15, y); ctx.lineTo(x + w / 2, y - w * 0.5); ctx.lineTo(x + w * 0.85, y); ctx.fill(); }
-      else if (top < 0.62) k.line(x + w / 2, y, x + w / 2, y - w * 0.6, k.LW * 0.8);
-      x += w + unit * k.rand(-0.15, 0.12);
-    }
-    k.rect(A.x0, base, A.w, A.y1 - base, P.ink);
   }
 
   // Concentric rainbow arcs, a target and pearls on a wire.
@@ -825,59 +569,196 @@
     if (k.chance(0.5)) k.circle(cx, cy, r, k.accent()); else { k.splitCircle(cx, cy, r, P.ink, k.accent(), k.chance(0.5)); }
   }
 
-  // A sun on the horizon over a perspective grid.
-  function compHorizon(k, A) {
-    const { P } = k;
-    const ctx = k.ctx;
-    const hy = A.y0 + A.h * k.rand(0.5, 0.62);
-    const cx = A.x0 + A.w * k.rand(0.35, 0.65);
-    // Sky bands.
-    if (k.chance(0.5)) k.rect(A.x0, A.y0, A.w, hy - A.y0, P.sand);
-    const R = A.w * k.rand(0.2, 0.3);
-    const sunCol = k.pick([P.primary, P.bright]);
-    k.half(cx, hy, R, 'up', sunCol);
-    // Cut-out stripes through the sun.
-    const cutN = k.rint(2, 5);
-    for (let i = 0; i < cutN; i++) {
-      const y = hy - R * (0.12 + i * 0.16);
-      ctx.save(); ctx.beginPath(); ctx.arc(cx, hy, R + 1, Math.PI, TAU); ctx.clip();
-      k.rect(cx - R - 2, y - R * 0.03 * (cutN - i) * 0.5, R * 2 + 4, R * 0.03 * (cutN - i) * 0.5 + 1, P.bg === '#16181D' ? P.bg : (k.chance(0.5) ? P.bg : P.sand));
+  // ---------- Shards: area cut by straight lines into angular planes ----------
+
+  /** Split a convex polygon by the line through (px, py) at angle a. Returns [sideA, sideB]. */
+  function splitPoly(pts, px, py, a) {
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const side = (p) => (p[0] - px) * dy - (p[1] - py) * dx;
+    const L = [], R = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      const sp = side(p), sq = side(q);
+      if (sp >= 0) L.push(p);
+      if (sp <= 0) R.push(p);
+      if ((sp > 0 && sq < 0) || (sp < 0 && sq > 0)) {
+        const t = sp / (sp - sq);
+        const m = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+        L.push(m); R.push(m);
+      }
+    }
+    return [L, R];
+  }
+  function polyArea(pts) {
+    let s = 0;
+    for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; s += p[0] * q[1] - q[0] * p[1]; }
+    return Math.abs(s) / 2;
+  }
+  function centroid(pts) {
+    const n = pts.length;
+    return [pts.reduce((s, p) => s + p[0], 0) / n, pts.reduce((s, p) => s + p[1], 0) / n];
+  }
+
+  function compShards(k, A) {
+    const { x0, y0, x1, y1 } = A;
+    let pieces = [[[x0, y0], [x1, y0], [x1, y1], [x0, y1]]];
+    const cuts = Math.round(k.rint(5, 9) * A.density);
+    for (let i = 0; i < cuts; i++) {
+      // Always cut the biggest piece, near its middle, so pieces stay balanced.
+      pieces.sort((a, b) => polyArea(b) - polyArea(a));
+      const big = pieces.shift();
+      const [cx, cy] = centroid(big);
+      const r = Math.sqrt(polyArea(big)) * 0.25;
+      pieces.push(...splitPoly(big, cx + k.rand(-r, r), cy + k.rand(-r, r), k.rand(0, Math.PI)));
+    }
+    const faceted = k.chance(0.4);
+    const seam = k.showLines ? k.LW * 0.5 : 0;
+    pieces.forEach((pts) => {
+      const fill = k.chance(0.12) ? k.P.paper : k.color(['sand']);
+      if (!faceted) return k.poly(pts, fill, seam);
+      // Faceted: fan the piece into triangles in lighter and darker tones of one colour.
+      const c = centroid(pts);
+      pts.forEach((p, i) => {
+        const q = pts[(i + 1) % pts.length];
+        const tone = k.chance(0.5) ? k.mix(fill, '#FFFFFF', k.rand(0, 0.3)) : k.mix(fill, '#000000', k.rand(0, 0.25));
+        k.poly([c, p, q], tone);
+      });
+      if (seam) k.poly(pts, 'rgba(0,0,0,0)', seam);
+    });
+  }
+
+  // ---------- Splinters: long thin wedges crossing the canvas ----------
+  function compSplinters(k, A) {
+    const { x0, y0, x1, y1, w, h } = A;
+    k.rect(x0, y0, w, h, k.P.paper);
+    k.ctx.save(); k.ctx.beginPath(); k.ctx.rect(x0, y0, w, h); k.ctx.clip();
+    const n = Math.round(k.rint(6, 10) * A.density);
+    for (let i = 0; i < n; i++) {
+      // Base sits on the top or bottom edge; the tip reaches far across.
+      const fromBottom = k.chance(0.55);
+      const by = fromBottom ? y1 : y0;
+      const bx = x0 + w * k.rand(-0.1, 1.1);
+      const bw = w * k.rand(0.04, 0.22);
+      const tip = [x0 + w * k.rand(0, 1), fromBottom ? y0 + h * k.rand(-0.1, 0.45) : y0 + h * k.rand(0.55, 1.1)];
+      k.poly([[bx - bw / 2, by], [bx + bw / 2, by], tip], k.accent());
+    }
+    k.ctx.restore();
+  }
+
+  // ---------- Medallion: a circle of tiles with quarter and half circles ----------
+  function compMedallion(k, A) {
+    const { P, ctx } = k;
+    const { x0, y0, w, h } = A;
+    const R = Math.min(w, h) / 2;
+    const cx = x0 + w / 2, cy = y0 + h / 2;
+    const n = Math.round(k.rint(6, 9) * Math.min(1.2, A.density)) || 6;
+    const s = (2 * R) / n, gx = cx - R, gy = cy - R;
+    const mirror = k.chance(k.V.symmetry + 0.2);
+    // Corners: 0 top-left, 1 top-right, 2 bottom-right, 3 bottom-left.
+    const flipH = [1, 0, 3, 2], flipV = [3, 2, 1, 0];
+    const cells = {};
+    k.circle(cx, cy, R, P.ink);
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      // In mirror mode each quadrant reuses the top-left quadrant's tile, flipped.
+      const mi = mirror ? Math.min(i, n - 1 - i) : i, mj = mirror ? Math.min(j, n - 1 - j) : j;
+      const key = mi + ',' + mj;
+      if (!cells[key]) cells[key] = { bg: k.color(), fg: k.accent(), motif: k.rint(0, 3), corner: k.rint(0, 3) };
+      const c = cells[key];
+      let corner = c.corner;
+      if (mirror && i !== mi) corner = flipH[corner];
+      if (mirror && j !== mj) corner = flipV[corner];
+      const x = gx + i * s, y = gy + j * s;
+      k.rect(x, y, s + 0.5, s + 0.5, c.bg);
+      const cxs = [x, x + s, x + s, x], cys = [y, y, y + s, y + s];
+      if (c.motif === 0) k.pie(cxs[corner], cys[corner], s, corner * Math.PI / 2, corner * Math.PI / 2 + Math.PI / 2, c.fg);
+      else if (c.motif === 1) {
+        const dirs = ['down', 'left', 'up', 'right'];
+        const mids = [[x + s / 2, y], [x + s, y + s / 2], [x + s / 2, y + s], [x, y + s / 2]];
+        k.half(mids[corner][0], mids[corner][1], s / 2, dirs[corner], c.fg);
+      } else if (c.motif === 2) {
+        const a = [cxs[corner], cys[corner]], b = [cxs[(corner + 1) % 4], cys[(corner + 1) % 4]], d = [cxs[(corner + 3) % 4], cys[(corner + 3) % 4]];
+        k.poly([a, b, d], c.fg);
+      }
+    }
+    for (let i = 1; i < n; i++) { k.gline(gx + i * s, gy, gx + i * s, gy + 2 * R, k.LW * 0.4); k.gline(gx, gy + i * s, gx + 2 * R, gy + i * s, k.LW * 0.4); }
+    ctx.restore();
+    k.ring(cx, cy, R, k.LW);
+  }
+
+  // ---------- Ribbons: curvy vertical bands with ovals, outlined in ink ----------
+  function compRibbons(k, A) {
+    const { ctx } = k;
+    const { x0, y0, x1, y1, w, h } = A;
+    const n = Math.max(3, Math.round(k.rint(3, 5) * A.density));
+    // Each boundary is a cubic curve from top to bottom; the outer ones are the area edges.
+    const curves = [];
+    for (let i = 0; i <= n; i++) {
+      const base = x0 + (w * i) / n, sway = (i === 0 || i === n) ? 0 : w / n * 0.7;
+      curves.push([base + k.rand(-sway, sway) * 0.4, base + k.rand(-sway, sway), base + k.rand(-sway, sway), base + k.rand(-sway, sway) * 0.4]);
+    }
+    const down = (c) => { ctx.lineTo(c[0], y0); ctx.bezierCurveTo(c[1], y0 + h / 3, c[2], y0 + 2 * h / 3, c[3], y1); };
+    const up = (c) => { ctx.lineTo(c[3], y1); ctx.bezierCurveTo(c[2], y0 + 2 * h / 3, c[1], y0 + h / 3, c[0], y0); };
+    const bandPath = (i) => { ctx.beginPath(); ctx.moveTo(curves[i][0], y0); down(curves[i]); up(curves[i + 1]); ctx.closePath(); };
+    const lw = k.LW * 0.9;
+    for (let i = 0; i < n; i++) {
+      bandPath(i); ctx.fillStyle = k.color(['sand']); ctx.fill();
+      // Ovals clipped to the band look like shapes passing behind the curves.
+      ctx.save(); bandPath(i); ctx.clip();
+      const ovals = k.rint(1, 3);
+      for (let j = 0; j < ovals; j++) {
+        ctx.beginPath();
+        ctx.ellipse(x0 + w * k.rand(0, 1), y0 + h * k.rand(0, 1), w * k.rand(0.12, 0.3), h * k.rand(0.15, 0.4), k.rand(-0.6, 0.6), 0, TAU);
+        ctx.fillStyle = k.color(['sand']); ctx.fill();
+        ctx.strokeStyle = k.P.ink; ctx.lineWidth = lw; ctx.stroke();
+      }
       ctx.restore();
     }
-    if (k.chance(0.5)) { // mountains
-      const c = P.deep;
-      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(A.x0, hy);
-      ctx.lineTo(A.x0 + A.w * k.rand(0.1, 0.2), hy - A.h * k.rand(0.1, 0.18));
-      ctx.lineTo(A.x0 + A.w * 0.32, hy); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = P.soft; ctx.beginPath(); ctx.moveTo(A.x1 - A.w * 0.35, hy);
-      ctx.lineTo(A.x1 - A.w * k.rand(0.12, 0.22), hy - A.h * k.rand(0.08, 0.15)); ctx.lineTo(A.x1, hy); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = k.P.ink; ctx.lineWidth = lw;
+    curves.slice(1, -1).forEach((c) => { ctx.beginPath(); ctx.moveTo(c[0], y0); down(c); ctx.stroke(); });
+    if (k.chance(0.6)) {
+      const r = Math.min(w, h) * k.rand(0.04, 0.07);
+      const cx = x0 + w * k.rand(0.1, 0.9), cy = y0 + h * k.rand(0.06, 0.2);
+      k.splitCircle(cx, cy, r, k.accent(), k.accent(), k.chance(0.5)); k.ring(cx, cy, r, lw);
     }
-    // Ground.
-    const ground = k.chance(0.5) ? P.deep : P.ink;
-    k.rect(A.x0, hy, A.w, A.y1 - hy, ground);
-    const lineCol = ground === P.ink ? P.bright : P.soft;
-    // Horizontal lines getting closer near the horizon.
-    const hn = Math.round(k.rint(5, 8) * Math.sqrt(A.density));
-    for (let i = 1; i <= hn; i++) {
-      const t = Math.pow(i / hn, 1.8);
-      const y = hy + (A.y1 - hy) * t;
-      if (opts_lines(k)) k.line(A.x0, y, A.x1, y, k.LW * 0.6, lineCol);
-    }
-    // Perspective lines from a vanishing point.
-    const vn = k.rint(6, 11);
-    ctx.save(); ctx.beginPath(); ctx.rect(A.x0, hy, A.w, A.y1 - hy); ctx.clip();
-    for (let i = 0; i <= vn; i++) {
-      const bx = A.x0 - A.w * 0.6 + (A.w * 2.2 * i) / vn;
-      if (opts_lines(k)) k.line(cx, hy, bx, A.y1, k.LW * 0.6, lineCol);
-    }
-    ctx.restore();
-    k.line(A.x0, hy, A.x1, hy, k.LW);
   }
-  // Grid-style lines in the horizon follow the "Grid lines" switch too.
-  const opts_lines = (k) => k.showLines;
 
-  const COMP_FNS = { grid: compGrid, orbs: compOrbs, bars: compBars, totem: compTotem, arches: compArches,
-    tiles: compTiles, towers: compTowers, rings: compRings, diagonals: compDiagonals, horizon: compHorizon };
+  // ---------- Peaks: low-poly mountains with lit and shadowed faces ----------
+  function compPeaks(k, A) {
+    const { P } = k;
+    const { x0, y0, x1, y1, w, h } = A;
+    const sky = k.pick([P.soft, P.paper, P.sand]);
+    k.rect(x0, y0, w, h, sky);
+    k.ctx.save(); k.ctx.beginPath(); k.ctx.rect(x0, y0, w, h); k.ctx.clip();
+    if (k.chance(0.5)) k.circle(x0 + w * k.rand(0.2, 0.8), y0 + h * k.rand(0.12, 0.3), Math.min(w, h) * k.rand(0.06, 0.12), k.pick([P.bright, P.primary]));
+    const lit = k.pick([P.bright, P.primary, P.soft, P.sand]);
+    const dark = k.pick([P.deep, P.ink]);
+    const rows = 3;
+    for (let r = 0; r < rows; r++) {
+      // Back rows are paler (fade toward the sky) and higher; front rows are stronger.
+      const fade = (rows - 1 - r) * 0.22;
+      const L = k.mix(lit, sky, fade), D = k.mix(dark, sky, fade);
+      const count = Math.max(2, Math.round(k.rint(2, 4) * A.density));
+      for (let i = 0; i < count; i++) {
+        const ax = x0 + w * k.rand(-0.05, 1.05);
+        const ay = y0 + h * (0.22 + r * 0.16 + k.rand(-0.06, 0.06));
+        const half = w * k.rand(0.18, 0.32);
+        const lx = ax - half, rx = ax + half;
+        const q = [ax + half * k.rand(-0.3, 0.3), ay + (y1 - ay) * k.rand(0.4, 0.65)];
+        const m = [q[0] + half * k.rand(-0.3, 0.3), y1];
+        k.poly([[ax, ay], [lx, y1], q], k.mix(L, '#FFFFFF', k.rand(0, 0.25)));
+        k.poly([[lx, y1], m, q], k.mix(L, D, k.rand(0.15, 0.35)));
+        k.poly([[ax, ay], q, [rx, y1]], k.mix(D, L, k.rand(0, 0.2)));
+        k.poly([q, m, [rx, y1]], k.mix(D, L, k.rand(0.25, 0.45)));
+      }
+    }
+    k.ctx.restore();
+  }
+
+
+  const COMP_FNS = { grid: compGrid, orbs: compOrbs, bars: compBars,
+    tiles: compTiles, rings: compRings, diagonals: compDiagonals,
+    shards: compShards, splinters: compSplinters, medallion: compMedallion, ribbons: compRibbons, peaks: compPeaks };
 
   // ---------- Paper grain ----------
   let grainTile = null;
